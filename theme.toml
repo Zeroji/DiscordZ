@@ -1,0 +1,73 @@
+# You really should leave this comment here
+
+force_hex = false
+
+[layout]
+    # `size` is either width or height depending on orientation
+    borders = true
+    order = ["status", "serv", "chan", "user", "box", "pad"]
+    # Status bar at the top of the screen
+    [layout.status]
+        # top / bottom / none
+        location = "top"
+        size = 1 # Might be better to keep this at 1
+        show = true
+    # Server list (+PM)
+    [layout.serv]
+        # left / right / none
+        location = "left"
+        size = 6
+        show = true
+    # Channel list
+    [layout.chan]
+        # left / right / none
+        location = "left"
+        size = 16
+        show = true
+    # User list
+    [layout.user]
+        # left / right / none
+        location = "right"
+        size = 16
+        show = true
+    # Message box
+    [layout.box]
+        # top / bottom / none (don't)
+        location = "bottom"
+        size = 4
+        show = true
+    # Main chat
+    [layout.pad]
+        # just don't even think about disabling this
+        show = true
+[chars]
+    background = " "
+    online = "●"
+    idle = "●"
+    offline = "○"
+    [chars.box]
+        ulc = "┌"
+        urc = "┐"
+        llc = "└"
+        lrc = "┘"
+        hor = "─"
+        vert = "│"
+        ltee = "├"
+        rtee = "┤"
+        ttee = "┬"
+        btee = "┴"
+        cross = "┼"
+
+[color]
+    main = 7
+    background = -1
+    borders = 3
+    selection = 7
+    selection_background = "#30414F"
+    selection_background_focused = "#546E7A"
+    links = "#738BD7"
+    online = "#43B581"
+    idle = "#FAA61A"
+    offline = "#424549"
+    mention = "#FAA61A"
+    mention_background = "#49433A"
