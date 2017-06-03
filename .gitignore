@@ -1,0 +1,8 @@
+# Development
+.idea/
+.python-version
+__pycache__/
+*.log
+
+# Data
+token

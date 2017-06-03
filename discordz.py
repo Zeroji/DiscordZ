@@ -1,7 +1,7 @@
-#!/usr/local/bin/python3.5
+#!/usr/bin/env python3
 """Discord app."""
 import curses
-# import getpass
+import os
 import discord
 import theme as thm
 import ui
@@ -60,12 +60,10 @@ async def main(window, theme, client):
 
 
 def _run():
-    email = 'zero44.e@gmail.com'  # input('Discord login: ')
-    passw = open('pw').read()  # getpass.getpass('Discord password: ')
-
+    token = open('token').read().strip()
     client = Client(main, 'theme.toml')
     try:
-        client.run(email, passw)
+        client.run(token, bot=False)
     except KeyboardInterrupt:
         pass
     except:
@@ -74,4 +72,7 @@ def _run():
         client.logout()
 
 if __name__ == '__main__':
+    if os.environ.get('TERM') != 'xterm-256color':
+        print('Setting $TERM to `xterm-256color`')
+        os.environ['TERM'] = 'xterm-256color'
     _run()
