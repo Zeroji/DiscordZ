@@ -16,7 +16,7 @@ force_hex = false
     [layout.serv]
         # left / right / none
         location = "left"
-        size = 6
+        size = 8
         show = true
     # Channel list
     [layout.chan]

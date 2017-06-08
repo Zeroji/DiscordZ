@@ -17,21 +17,22 @@ class Client(discord.Client):
 
     async def on_ready(self):
         """Discord client initialization, main function wrapper."""
+        window = None
         try:
             window = curses.initscr()
-            curses.noecho()
-            curses.cbreak()
-            window.keypad(1)
-            curses.start_color()
+            curses.noecho()         # Don't echo input
+            curses.raw()            # Catch Ctrl+S, Ctrl+Z and such
+            window.keypad(True)     # Catch Ctrl+Down as one key
+            window.nodelay(True)    # Non-blocking getch()
+            curses.start_color()    # Custom colors
             await self.callback(window, thm.Theme(self.theme), self)
         finally:
-            if 'window' in locals():
-                window.keypad(0)
+            if window is not None:
+                window.keypad(False)
                 curses.echo()
                 curses.nocbreak()
                 curses.endwin()
-
-FOCUS_SHORTCUTS = {21: 'user', 6: 'serv', 7: 'chan', 8: 'pad', 0: 'box'}
+            await self.logout()
 
 
 async def main(window, theme, client):
@@ -44,19 +45,16 @@ async def main(window, theme, client):
     key = -1
 
     win = ui.UI(window, theme, client)
-    focus = 'serv' if theme.serv is not None else 'pad'
 
-    while key != ord('q'):
-        focus = win.press(key, focus) or focus
-        win.draw(focus)
-        theme.refresh_windows()
+    while key != 17:  # Ctrl+Q
+        if key != -1:
+            win.press(key)
+        win.draw()
+        win.refresh()
         try:
             key = window.getch()
         except KeyboardInterrupt:
             key = 3
-        if key in FOCUS_SHORTCUTS.keys():
-            focus = FOCUS_SHORTCUTS[key]
-            key = -1
 
 
 def _run():
@@ -66,10 +64,6 @@ def _run():
         client.run(token, bot=False)
     except KeyboardInterrupt:
         pass
-    except:
-        raise
-    finally:
-        client.logout()
 
 if __name__ == '__main__':
     if os.environ.get('TERM') != 'xterm-256color':

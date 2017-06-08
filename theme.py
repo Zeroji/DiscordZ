@@ -2,7 +2,6 @@
 import curses
 import toml
 import utils
-import subwin
 
 VERT = ('left', 'right')
 HOR = ('top', 'bottom')
@@ -18,6 +17,26 @@ def log(*x):
     """Log."""
     with open('out', 'a') as logs:
         logs.write(' '.join([str(e) for e in x]) + '\n')
+
+
+class Rect:
+    def __init__(self, x, y, w, h):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+
+    def set(self, x, y, w, h):
+        self.setXY(x, y)
+        self.setWH(w, h)
+
+    def setXY(self, x, y):
+        self.x = x
+        self.y = y
+
+    def setWH(self, w, h):
+        self.w = w
+        self.h = h
 
 
 class Theme(object):
@@ -57,6 +76,7 @@ class Theme(object):
         self._colors = {}
         self._customs = 17
         self._pairs = {}
+        self.boxes = {}
 
         for key, value in data['color'].items():
             code = self._process(value)
@@ -70,16 +90,9 @@ class Theme(object):
         window.bkgd(self.chars.background, self.pair('main'))
         layout = self.external_data.layout
         attr = {}
-        # try:
-        #     for box in layout.order:
-        #         attr[box] = self.__getattribute__(box)
-        # except AttributeError:
-        #     pass
-        # log(attr)
         for box in layout.order:
             if box in dir(self):
                 self.__delattr__(box)
-        # log(dir(self))
         scr_x, scr_y = 0, 0
         height, width = window.getmaxyx()
         for box_name in layout.order[:-1]:
@@ -101,36 +114,23 @@ class Theme(object):
                     width -= win_w + layout.borders
                 win_x += scr_x
                 win_y += scr_y
-                # log(box_name, box.location, win_h, win_w, win_y, win_x)
                 if box_name in attr.keys():
-                    # log(attr[box_name].getparyx(), attr[box_name].getmaxyx())
-                    attr[box_name].mvwin(win_y, win_x)
-                    attr[box_name].resize(win_h, win_w)
+                    attr[box_name].set(win_x, win_y, win_w, win_h)
                 else:
-                    sub = window.subwin(win_h, win_w, win_y, win_x)
-                    sub.clear()
-                    attr[box_name] = subwin.Win(sub)
+                    attr[box_name] = Rect(win_x, win_y, win_w, win_h)
                 if box.location == 'left':
                     scr_x += win_w + layout.borders
                 elif box.location == 'top':
                     scr_y += win_h + layout.borders
         box_name = layout.order[-1]
         if box_name in attr.keys():
-            attr[box_name].mvwin(scr_y, scr_x)
-            attr[box_name].resize(height, width)
+            attr[box_name].set(scr_x, scr_y, width, height)
         else:
-            attr[box_name] = window.subwin(height, width, scr_y, scr_x)
-        for box_name, box in attr.items():
-            if box_name not in dir(self):
-                self.__setattr__(box_name, box)
+            attr[box_name] = Rect(scr_x, scr_y, width, height)
+        self.boxes = attr
 
-    def refresh_windows(self):
-        """Refresh all the parts of the UI."""
-        for box in self.layout.order:
-            try:
-                self.__getattribute__(box).refresh()
-            except AttributeError:
-                pass
+    def get_layout(self, box_name):
+        return self.boxes.get(box_name)
 
     def borders(self, window):
         """Draw window borders."""
@@ -140,13 +140,9 @@ class Theme(object):
         boxes = []
         boxch = self.chars.box
         for box_name in self.layout.order:
-            try:
-                box = self.__getattribute__(box_name)
-            except AttributeError:
-                pass
-            else:
-                if box is not None:
-                    boxes.append((box, self.layout[box_name]))
+            box = self.boxes.get(box_name)
+            if box is not None:
+                boxes.append((box, self.layout[box_name]))
         boxes = boxes[:-1]
         for i, (win, box) in enumerate(boxes):
             horizontal = box.location in HOR
@@ -157,14 +153,14 @@ class Theme(object):
             def get_z(win, box):
                 if box.location in HOR:
                     z = (win.y - 1 if box.location == 'bottom' else
-                         win.y + win.height)
+                         win.y + win.h)
                 else:
                     z = (win.x - 1 if box.location == 'right' else
-                         win.x + win.width)
+                         win.x + win.w)
                 return z
             box_z = get_z(win, box)
 
-            for z in range(win.width if horizontal else win.height):
+            for z in range(win.w if horizontal else win.h):
                 x, y = z + win.x, box_z
                 if not horizontal:
                     x, y = y, z + win.y
