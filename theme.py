@@ -10,7 +10,8 @@ INV = {'left': 'right', 'right': 'left', 'top': 'bottom', 'bottom': 'top'}
 
 PAIRS = {'main': ('main', 'background'),
          'sel': ('selection', 'selection_background'),
-         'sel_focus': ('selection', 'selection_background_focused')}
+         'sel_focus': ('selection', 'selection_background_focused'),
+         'mention_icon': ('main', 'mention_notification_background')}
 
 
 def log(*x):

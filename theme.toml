@@ -60,7 +60,7 @@ force_hex = false
 
 [color]
     main = 7
-    background = -1
+    background = "#2B2B2B"
     borders = 3
     selection = 7
     selection_background = "#30414F"
@@ -71,3 +71,4 @@ force_hex = false
     offline = "#424549"
     mention = "#FAA61A"
     mention_background = "#49433A"
+    mention_notification_background = "#F04747"

@@ -32,18 +32,24 @@ class Win:
         self.ui = ui
         self.y, self.x = window.getparyx()
         self.height, self.width = window.getmaxyx()
-        self.redraw = True
+        self._redraw = True
+        self._refresh = False
+        self.focused = False
 
     def __getattr__(self, key):
         """Magic method."""
-        self.redraw = True
         return self.win.__getattribute__(key)
+
+    def redraw(self):
+        """Mark for redraw."""
+        self._redraw = True
 
     def refresh(self):
         """Refresh window if needed."""
-        if not self.redraw:
+        if not self._refresh:
             return
         self.win.refresh()
+        self._refresh = False
 
     def update_rect(self, theme):
         rect = self.get_rect(theme)
@@ -52,6 +58,7 @@ class Win:
         self.win.mvwin(rect.y, rect.x)
         self.y, self.x = self.win.getparyx()
         self.height, self.width = self.win.getmaxyx()
+        self.redraw()
 
     def addstr(self, row, col, string, attr=0):
         """Window.addstr wrapper handling curses.error."""
@@ -70,9 +77,28 @@ class Win:
     def press(self, key):
         pass
 
-    def draw(self, focused):
+    def focus_on(self):
+        if not self.focused:
+            self.redraw()
+        self.focused = True
+        pass
+
+    def focus_off(self):
+        if self.focused:
+            self.redraw()
+        self.focused = False
+        pass
+
+    def draw_(self):
+        if not self._redraw:
+            return
+        self._redraw = False
+        self.draw()
+        self._refresh = True
+
+    def draw(self):
         self.win.clear()
-        self.addstr(0, 0, self.__class__.__name__ + ('focus' if focused else 'nope'))
+        self.addstr(0, 0, self.__class__.__name__ + ('focus' if self.focused else 'nope'))
         self.addstr(1, 0, ','.join(map(str, (self.x, self.y, self.width, self.height))))
 
 
@@ -82,19 +108,21 @@ class WinList(Win):  # Scrollable list of items
         self.data = []
         self.data_to_key = lambda _: _
         self.data_to_text = lambda _: _
+        self.display = lambda data, row, sel: self.addlnstr(row, 0, self.data_to_text(data)[:self.width],
+                                                            self.width, self.pair_selection if sel else self.pair_main)
         self.cursor = 0
         self.offset = 0
         self.pair_main = 0
         self.pair_selection = 1
 
-    def draw(self, focused):
-        self.pair_selection = self.ui.theme.pair('sel_focus' if focused else 'sel')
+    def draw(self):
+        self.pair_selection = self.ui.theme.pair('sel_focus' if self.focused else 'sel')
         for i in range(min(self.height, len(self.data) - self.offset)):
-            self.addlnstr(i, 0, self.data_to_text(self.data[i + self.offset])[:self.width]
-                          , self.width, self.pair_selection if i + self.offset == self.cursor else self.pair_main)
+            self.display(self.data[i + self.offset], i, i + self.offset == self.cursor)
 
     def press(self, key):
         old = self.cursor
+        old_off = self.offset
         cap = len(self.data) - 1
         if key == 259 and self.cursor > 0:      # Up
             self.cursor -= 1
@@ -129,3 +157,6 @@ class WinList(Win):  # Scrollable list of items
                 self.offset = self.cursor - self.height + 1
             if self.cursor - self.offset < 0:
                 self.offset = self.cursor
+            self.redraw()
+        if self.offset != old_off:
+            self.redraw()
